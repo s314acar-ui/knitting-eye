@@ -24,6 +24,7 @@ class _BarcodeScreenState extends State<BarcodeScreen>
   bool _isProcessing = false;
   bool _isCameraInitialized = false;
   bool _hasError = false;
+  bool _isInitializing = false; // Kamera başlatma işlemi devam ediyor mu?
   String? _lastBarcode;
   final List<String> _recentBarcodes = [];
   String _statusMessage = 'Kamera başlatılıyor...';
@@ -55,11 +56,23 @@ class _BarcodeScreenState extends State<BarcodeScreen>
   }
 
   Future<void> _reinitCamera() async {
-    if (!mounted) return;
+    if (!mounted || _isInitializing) return;
+    
+    setState(() {
+      _isInitializing = true;
+    });
+    
     _stopCamera();
     await Future.delayed(const Duration(milliseconds: 300));
+    
     if (mounted) {
       await _initCamera();
+    }
+    
+    if (mounted) {
+      setState(() {
+        _isInitializing = false;
+      });
     }
   }
 
@@ -70,6 +83,7 @@ class _BarcodeScreenState extends State<BarcodeScreen>
       setState(() {
         _hasError = false;
         _statusMessage = 'Kamera başlatılıyor...';
+        _isCameraInitialized = false;
       });
 
       // Kamera izni kontrolü
@@ -305,24 +319,35 @@ class _BarcodeScreenState extends State<BarcodeScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.videocam_off,
-                              size: 64, color: Colors.grey),
+                              size: 64, color: Colors.red),
                           const SizedBox(height: 16),
                           Text(
                             _statusMessage,
                             style: const TextStyle(
-                                color: Colors.grey, fontSize: 16),
+                                color: Colors.white, fontSize: 16),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: _reinitCamera,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Tekrar Dene'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[700],
-                              foregroundColor: Colors.white,
+                          const SizedBox(height: 24),
+                          if (_isInitializing)
+                            const CircularProgressIndicator(color: Colors.white)
+                          else
+                            ElevatedButton.icon(
+                              onPressed: _reinitCamera,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Tekrar Dene'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 32,
+                                  vertical: 16,
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     )
