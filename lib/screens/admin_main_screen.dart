@@ -196,7 +196,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                       ),
                     ),
                     child: const Text(
-                      'v2.0.2',
+                      'v2.0.3',
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 10,

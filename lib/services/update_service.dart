@@ -11,8 +11,8 @@ class UpdateService {
   static const String _githubAllReleasesUrl = 
       'https://api.github.com/repos/s314acar-ui/knitting-eye/releases';
   
-  static const String _currentVersion = '2.0.2'; // pubspec.yaml'daki versiyon
-  static const int _currentBuildNumber = 4;
+  static const String _currentVersion = '2.0.3'; // pubspec.yaml'daki versiyon
+  static const int _currentBuildNumber = 5;
 
   /// GitHub'dan son sürüm bilgisini kontrol et
   Future<UpdateInfo?> checkForUpdates() async {

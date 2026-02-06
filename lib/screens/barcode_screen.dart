@@ -319,7 +319,7 @@ class _BarcodeScreenState extends State<BarcodeScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.videocam_off,
-                              size: 64, color: Colors.red),
+                              size: 64, color: Colors.orange),
                           const SizedBox(height: 16),
                           Text(
                             _statusMessage,
