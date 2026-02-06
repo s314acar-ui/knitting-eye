@@ -8,9 +8,11 @@ import 'package:permission_handler/permission_handler.dart';
 class UpdateService {
   static const String _githubApiUrl = 
       'https://api.github.com/repos/s314acar-ui/knitting-eye/releases/latest';
+  static const String _githubAllReleasesUrl = 
+      'https://api.github.com/repos/s314acar-ui/knitting-eye/releases';
   
-  static const String _currentVersion = '2.0.1'; // pubspec.yaml'daki versiyon
-  static const int _currentBuildNumber = 3;
+  static const String _currentVersion = '2.0.2'; // pubspec.yaml'daki versiyon
+  static const int _currentBuildNumber = 4;
 
   /// GitHub'dan son sürüm bilgisini kontrol et
   Future<UpdateInfo?> checkForUpdates() async {
@@ -55,6 +57,61 @@ class UpdateService {
     } catch (e) {
       debugPrint('Update check error: $e');
       return null;
+    }
+  }
+
+  /// Tüm release'leri getir
+  Future<List<UpdateInfo>> getAllReleases() async {
+    try {
+      final response = await http.get(
+        Uri.parse(_githubAllReleasesUrl),
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> releases = json.decode(response.body);
+        final List<UpdateInfo> allReleases = [];
+
+        for (var data in releases) {
+          final version = data['tag_name']?.toString().replaceAll('v', '') ?? '';
+          final releaseUrl = data['html_url'] ?? '';
+          final releaseNotes = data['body'] ?? '';
+          final publishedAt = data['published_at'] ?? '';
+          
+          // APK dosyasını bul
+          String? apkDownloadUrl;
+          int apkSize = 0;
+          if (data['assets'] != null && (data['assets'] as List).isNotEmpty) {
+            for (var asset in data['assets']) {
+              if (asset['name'].toString().endsWith('.apk')) {
+                apkDownloadUrl = asset['browser_download_url'];
+                apkSize = asset['size'] ?? 0;
+                break;
+              }
+            }
+          }
+
+          if (version.isNotEmpty && apkDownloadUrl != null) {
+            allReleases.add(UpdateInfo(
+              version: version,
+              downloadUrl: apkDownloadUrl,
+              releaseUrl: releaseUrl,
+              releaseNotes: releaseNotes,
+              apkSize: apkSize,
+              publishedAt: publishedAt,
+              isCurrent: version == _currentVersion,
+            ));
+          }
+        }
+
+        return allReleases;
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Get all releases error: $e');
+      return [];
     }
   }
 
@@ -159,6 +216,8 @@ class UpdateInfo {
   final String releaseUrl;
   final String releaseNotes;
   final int apkSize;
+  final String publishedAt;
+  final bool isCurrent;
 
   UpdateInfo({
     required this.version,
@@ -166,11 +225,38 @@ class UpdateInfo {
     required this.releaseUrl,
     required this.releaseNotes,
     required this.apkSize,
+    this.publishedAt = '',
+    this.isCurrent = false,
   });
 
   String get formattedSize {
     if (apkSize < 1024) return '$apkSize B';
     if (apkSize < 1024 * 1024) return '${(apkSize / 1024).toStringAsFixed(1)} KB';
     return '${(apkSize / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  String get formattedDate {
+    if (publishedAt.isEmpty) return '';
+    try {
+      final date = DateTime.parse(publishedAt);
+      return '${date.day}.${date.month}.${date.year}';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  bool isNewerThan(String currentVersion) {
+    try {
+      final thisParts = version.split('.').map(int.parse).toList();
+      final currentParts = currentVersion.split('.').map(int.parse).toList();
+      
+      for (int i = 0; i < 3; i++) {
+        if (thisParts[i] > currentParts[i]) return true;
+        if (thisParts[i] < currentParts[i]) return false;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 }

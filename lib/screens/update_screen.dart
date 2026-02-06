@@ -17,8 +17,10 @@ class _UpdateScreenState extends State<UpdateScreen> {
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
   UpdateInfo? _updateInfo;
+  List<UpdateInfo> _allReleases = [];
   String? _errorMessage;
   File? _downloadedApk;
+  String? _downloadingVersion;
 
   @override
   void initState() {
@@ -31,13 +33,17 @@ class _UpdateScreenState extends State<UpdateScreen> {
       _isChecking = true;
       _errorMessage = null;
       _updateInfo = null;
+      _allReleases = [];
     });
 
     try {
+      // Hem en son sürümü hem de tüm sürümleri al
       final updateInfo = await _updateService.checkForUpdates();
+      final allReleases = await _updateService.getAllReleases();
       
       setState(() {
         _updateInfo = updateInfo;
+        _allReleases = allReleases;
         _isChecking = false;
       });
     } catch (e) {
@@ -48,8 +54,8 @@ class _UpdateScreenState extends State<UpdateScreen> {
     }
   }
 
-  Future<void> _downloadAndInstall() async {
-    if (_updateInfo?.downloadUrl.isEmpty ?? true) {
+  Future<void> _downloadAndInstall(UpdateInfo release) async {
+    if (release.downloadUrl.isEmpty) {
       setState(() {
         _errorMessage = 'APK indirme linki bulunamadı';
       });
@@ -60,11 +66,12 @@ class _UpdateScreenState extends State<UpdateScreen> {
       _isDownloading = true;
       _downloadProgress = 0.0;
       _errorMessage = null;
+      _downloadingVersion = release.version;
     });
 
     try {
       final apkFile = await _updateService.downloadApk(
-        _updateInfo!.downloadUrl,
+        release.downloadUrl,
         (progress) {
           setState(() {
             _downloadProgress = progress;
@@ -129,8 +136,8 @@ class _UpdateScreenState extends State<UpdateScreen> {
       return _buildErrorState();
     }
 
-    if (_updateInfo != null) {
-      return _buildUpdateAvailable();
+    if (_allReleases.isNotEmpty) {
+      return _buildAllReleases();
     }
 
     return _buildUpToDate();
@@ -225,51 +232,52 @@ class _UpdateScreenState extends State<UpdateScreen> {
     );
   }
 
-  Widget _buildUpdateAvailable() {
+  Widget _buildAllReleases() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Güncelleme ikonu
-          const Icon(
-            Icons.system_update,
-            color: Colors.blue,
-            size: 64,
-          ),
-          const SizedBox(height: 16),
-          
           // Başlık
-          const Text(
-            'Yeni Sürüm Mevcut!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+          if (_updateInfo != null) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.system_update, color: Colors.blue, size: 32),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Yeni Sürüm Mevcut!',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'v${_updateService.currentVersion} → v${_updateInfo!.version}',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          
-          // Versiyon bilgisi
-          Text(
-            'v${_updateService.currentVersion} → v${_updateInfo!.version}',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white70, fontSize: 18),
-          ),
-          const SizedBox(height: 8),
-          
-          // APK boyutu
-          if (_updateInfo!.apkSize > 0)
-            Text(
-              'Boyut: ${_updateInfo!.formattedSize}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white60, fontSize: 14),
-            ),
-          const SizedBox(height: 24),
-          
-          // Güncelleme notları
-          if (_updateInfo!.releaseNotes.isNotEmpty) ...[
+            const SizedBox(height: 16),
+          ],
+
+          // İndirme progress
+          if (_isDownloading) ...[
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -277,70 +285,26 @@ class _UpdateScreenState extends State<UpdateScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Yenilikler:',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  LinearProgressIndicator(
+                    value: _downloadProgress,
+                    backgroundColor: const Color(0xFF2D2D2D),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _updateInfo!.releaseNotes,
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    'v$_downloadingVersion indiriliyor... ${(_downloadProgress * 100).toStringAsFixed(0)}%',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
           ],
-          
-          // İndirme progress
-          if (_isDownloading) ...[
-            LinearProgressIndicator(
-              value: _downloadProgress,
-              backgroundColor: const Color(0xFF3D3D3D),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${(_downloadProgress * 100).toStringAsFixed(0)}% İndiriliyor...',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 24),
-          ],
-          
-          // Butonlar
-          if (!_isDownloading) ...[
-            ElevatedButton.icon(
-              onPressed: _downloadAndInstall,
-              icon: const Icon(Icons.download),
-              label: const Text('İndir ve Yükle'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Daha Sonra'),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white70,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
-          ],
-          
+
           // İndirme tamamlandı mesajı
           if (_downloadedApk != null) ...[
-            const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -361,7 +325,197 @@ class _UpdateScreenState extends State<UpdateScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
           ],
+
+          // Tüm versiyonlar başlığı
+          Row(
+            children: [
+              const Icon(Icons.history, color: Colors.white70, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Tüm Versiyonlar',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_allReleases.length}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Versiyon listesi
+          ..._allReleases.map((release) => _buildReleaseCard(release)).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReleaseCard(UpdateInfo release) {
+    final isNewer = release.isNewerThan(_updateService.currentVersion);
+    final borderColor = release.isCurrent
+        ? Colors.green
+        : isNewer
+            ? Colors.blue
+            : Colors.white.withOpacity(0.2);
+    final bgColor = release.isCurrent
+        ? Colors.green.withOpacity(0.1)
+        : isNewer
+            ? Colors.blue.withOpacity(0.1)
+            : const Color(0xFF3D3D3D);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Başlık
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Versiyon bilgisi
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'v${release.version}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (release.isCurrent)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'KURULU',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            )
+                          else if (isNewer)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.blue,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'YENİ',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          if (release.formattedDate.isNotEmpty) ...[
+                            Icon(Icons.calendar_today,
+                                size: 12, color: Colors.white.withOpacity(0.6)),
+                            const SizedBox(width: 4),
+                            Text(
+                              release.formattedDate,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                          ],
+                          Icon(Icons.file_download,
+                              size: 12, color: Colors.white.withOpacity(0.6)),
+                          const SizedBox(width: 4),
+                          Text(
+                            release.formattedSize,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.6),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // İndir butonu
+                if (!release.isCurrent && !_isDownloading)
+                  ElevatedButton.icon(
+                    onPressed: () => _downloadAndInstall(release),
+                    icon: const Icon(Icons.download, size: 18),
+                    label: const Text('İndir'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isNewer ? Colors.blue : Colors.grey[700],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Release notları (genişletilebilir)
+          if (release.releaseNotes.isNotEmpty)
+            ExpansionTile(
+              title: const Text(
+                'Yenilikler',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+              iconColor: Colors.white70,
+              collapsedIconColor: Colors.white70,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  color: Colors.black.withOpacity(0.2),
+                  child: Text(
+                    release.releaseNotes,
+                    style: const TextStyle(color: Colors.white60, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
