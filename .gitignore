@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# APK files - GitHub 100MB limit aşıyor
+*.apk
+*.aab
+ELiAR_OCR_Scanner.apk
+Knitting_Eye_*.apk
