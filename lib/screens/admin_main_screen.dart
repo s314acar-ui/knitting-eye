@@ -196,7 +196,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                       ),
                     ),
                     child: const Text(
-                      'v2.0.3',
+                      'v2.0.4',
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 10,
@@ -234,7 +234,19 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
           ),
 
           // Sağ - Navigasyon Butonları
-          _buildNavButton(index: 0, icon: Icons.home, label: 'Anasayfa'),
+          _buildNavButton(
+              index: 0, 
+              icon: Icons.home, 
+              label: 'Anasayfa',
+              onTap: () {
+                if (_currentIndex == 0) {
+                  // Zaten ana sayfadaysa, sayfayı yenile
+                  _homeTabKey.currentState?.refreshPage();
+                } else {
+                  // Ana sayfaya git
+                  _navigateTo(0);
+                }
+              }),
           _buildNavButton(
               index: 1, icon: Icons.qr_code_scanner, label: 'Barkod'),
           _buildNavButton(

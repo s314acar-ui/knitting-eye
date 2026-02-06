@@ -41,16 +41,26 @@ class _UpdateScreenState extends State<UpdateScreen> {
       final updateInfo = await _updateService.checkForUpdates();
       final allReleases = await _updateService.getAllReleases();
       
-      setState(() {
-        _updateInfo = updateInfo;
-        _allReleases = allReleases;
-        _isChecking = false;
-      });
+      debugPrint('✅ Update Check: Found ${allReleases.length} releases');
+      for (var release in allReleases) {
+        debugPrint('  📦 v${release.version} - ${release.isCurrent ? "CURRENT" : release.isNewerThan(_updateService.currentVersion) ? "NEWER" : "OLDER"}');
+      }
+      
+      if (mounted) {
+        setState(() {
+          _updateInfo = updateInfo;
+          _allReleases = allReleases;
+          _isChecking = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Güncelleme kontrolü başarısız: $e';
-        _isChecking = false;
-      });
+      debugPrint('❌ Update check error: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Güncelleme kontrolü başarısız: $e';
+          _isChecking = false;
+        });
+      }
     }
   }
 
