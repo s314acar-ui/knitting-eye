@@ -159,33 +159,40 @@ class UpdateService {
     void Function(double progress) onProgress,
   ) async {
     try {
-      // Storage izni kontrolü
-      if (await Permission.storage.isDenied) {
-        final status = await Permission.storage.request();
-        if (!status.isGranted) {
-          return null;
-        }
-      }
-
+      debugPrint('📥 Starting APK download from: $url');
+      
       // Install packages izni (Android 8+)
       if (await Permission.requestInstallPackages.isDenied) {
+        debugPrint('🔒 Requesting install packages permission...');
         final status = await Permission.requestInstallPackages.request();
         if (!status.isGranted) {
+          debugPrint('❌ Install packages permission denied');
           return null;
         }
       }
 
+      debugPrint('✅ Permission granted, starting HTTP request...');
       final client = http.Client();
       final request = http.Request('GET', Uri.parse(url));
       final response = await client.send(request);
 
+      debugPrint('📡 Response status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final contentLength = response.contentLength ?? 0;
+        debugPrint('📦 Content length: ${(contentLength / 1024 / 1024).toStringAsFixed(2)} MB');
         int downloadedBytes = 0;
 
-        // Download klasörüne kaydet
+        // App-specific external storage kullan (izin gerektirmez Android 10+)
         final dir = await getExternalStorageDirectory();
         final file = File('${dir!.path}/knitting_eye_update.apk');
+        debugPrint('💾 Saving to: ${file.path}');
+
+        // Eski dosya varsa sil
+        if (await file.exists()) {
+          await file.delete();
+          debugPrint('🗑️ Old APK deleted');
+        }
 
         final sink = file.openWrite();
         
@@ -202,13 +209,18 @@ class UpdateService {
         await sink.close();
         client.close();
 
+        final fileSize = await file.length();
+        debugPrint('✅ Download complete! File size: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
         return file;
+      } else {
+        debugPrint('❌ HTTP Error: ${response.statusCode}');
+        debugPrint('Response: ${await response.stream.bytesToString()}');
       }
       
       client.close();
       return null;
     } catch (e) {
-      debugPrint('Download error: $e');
+      debugPrint('❌ Download error: $e');
       return null;
     }
   }

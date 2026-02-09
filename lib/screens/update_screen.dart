@@ -115,9 +115,14 @@ class _UpdateScreenState extends State<UpdateScreen> {
         }
       } else {
         setState(() {
-          _errorMessage = 'APK indirilemedi';
+          _errorMessage = null;
           _isDownloading = false;
         });
+        
+        // İndirme başarısız olduğunda izin uyarısı göster
+        if (mounted) {
+          _showPermissionDialog();
+        }
       }
     } catch (e) {
       setState(() {
@@ -125,6 +130,119 @@ class _UpdateScreenState extends State<UpdateScreen> {
         _isDownloading = false;
       });
     }
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF16213e),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.blue, size: 28),
+            const SizedBox(width: 12),
+            const Text(
+              'İzin Gerekli',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'APK indirmek için aşağıdaki izinler gereklidir:',
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            _buildPermissionItem(
+              Icons.install_mobile,
+              'Bilinmeyen Kaynaklardan Yükleme',
+              'APK dosyalarını yüklemek için gerekli',
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.settings, color: Colors.blue, size: 18),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Nasıl Yapılır?',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '1. Ayarlar > Uygulamalar > Knitting Eye\n'
+                    '2. İzinler > Bilinmeyen kaynaklardan yükleme\n'
+                    '3. İzin ver / Allow',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tamam', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermissionItem(IconData icon, String title, String description) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: Colors.orange, size: 24),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: const TextStyle(color: Colors.white60, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -135,6 +253,12 @@ class _UpdateScreenState extends State<UpdateScreen> {
         backgroundColor: const Color(0xFF3D3D3D),
         title: const Text('Güncelleme Kontrol'),
         actions: [
+          // İzin bilgisi ikonu
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: _showPermissionDialog,
+            tooltip: 'İzin Bilgisi',
+          ),
           if (!_isChecking && !_isDownloading)
             IconButton(
               icon: const Icon(Icons.refresh),
