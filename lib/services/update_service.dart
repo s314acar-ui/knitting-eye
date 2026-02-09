@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class UpdateService {
   static const String _githubApiUrl = 
@@ -11,8 +11,22 @@ class UpdateService {
   static const String _githubAllReleasesUrl = 
       'https://api.github.com/repos/s314acar-ui/knitting-eye/releases';
   
+  // GitHub Personal Access Token - dart-define veya .env dosyasından okunur
+  static const String _githubToken = String.fromEnvironment('GITHUB_TOKEN', defaultValue: '');
+  
   static const String _currentVersion = '2.0.5'; // pubspec.yaml'daki versiyon
   static const int _currentBuildNumber = 7;
+
+  /// GitHub API headers (token varsa auth ekle)
+  Map<String, String> get _headers {
+    final headers = <String, String>{
+      'Accept': 'application/vnd.github.v3+json',
+    };
+    if (_githubToken.isNotEmpty) {
+      headers['Authorization'] = 'token $_githubToken';
+    }
+    return headers;
+  }
 
   /// GitHub'dan son sürüm bilgisini kontrol et
   Future<UpdateInfo?> checkForUpdates() async {
@@ -20,9 +34,7 @@ class UpdateService {
       debugPrint('🔍 Checking for updates...');
       final response = await http.get(
         Uri.parse(_githubApiUrl),
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-        },
+        headers: _headers,
       ).timeout(const Duration(seconds: 10));
 
       debugPrint('📡 checkForUpdates - Status: ${response.statusCode}');
@@ -76,9 +88,7 @@ class UpdateService {
     try {
       final response = await http.get(
         Uri.parse(_githubAllReleasesUrl),
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-        },
+        headers: _headers,
       ).timeout(const Duration(seconds: 10));
 
       debugPrint('📡 getAllReleases - Status: ${response.statusCode}');
@@ -161,17 +171,8 @@ class UpdateService {
     try {
       debugPrint('📥 Starting APK download from: $url');
       
-      // Install packages izni (Android 8+)
-      if (await Permission.requestInstallPackages.isDenied) {
-        debugPrint('🔒 Requesting install packages permission...');
-        final status = await Permission.requestInstallPackages.request();
-        if (!status.isGranted) {
-          debugPrint('❌ Install packages permission denied');
-          return null;
-        }
-      }
-
-      debugPrint('✅ Permission granted, starting HTTP request...');
+      // İzin kontrolü yapmıyoruz - Android, APK açılınca kendisi izin isteyecek
+      debugPrint('✅ Starting HTTP request (permission will be asked on install)...');
       final client = http.Client();
       final request = http.Request('GET', Uri.parse(url));
       final response = await client.send(request);
@@ -225,17 +226,29 @@ class UpdateService {
     }
   }
 
-  /// APK kurulumunu başlat (Android Intent kullanarak)
-  Future<bool> installApk(File apkFile) async {
+  /// APK kurulumunu başlat (Native Android Intent kullanarak)
+  Future<String> installApk(File apkFile) async {
     try {
-      // Android'de APK kurulumu için native kod gerekiyor
-      // Şimdilik dosya yolunu döndürelim
-      debugPrint('APK ready to install: ${apkFile.path}');
-      
-      // Kullanıcıya dosya yöneticisi veya install ekranı gösterilecek
-      return true;
+      debugPrint('📲 Installing APK via native channel: ${apkFile.path}');
+      const channel = MethodChannel('com.example.ocr_scanner_app/install');
+      final result = await channel.invokeMethod('installApk', {
+        'filePath': apkFile.path,
+      });
+      debugPrint('📲 Install result: $result');
+      return result?.toString() ?? 'UNKNOWN';
     } catch (e) {
-      debugPrint('Install error: $e');
+      debugPrint('❌ Install error: $e');
+      return 'ERROR: $e';
+    }
+  }
+
+  /// Paket yükleme izni var mı kontrol et
+  Future<bool> canInstallPackages() async {
+    try {
+      const channel = MethodChannel('com.example.ocr_scanner_app/install');
+      final result = await channel.invokeMethod('canInstallPackages');
+      return result == true;
+    } catch (e) {
       return false;
     }
   }

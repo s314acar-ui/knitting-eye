@@ -17,7 +17,6 @@ Private repository için push yapabilmek için Personal Access Token gerekir:
    - ✅ `workflow`
 6. **Generate token** butonuna tıklayın
 7. ⚠️ **Token'ı kopyalayın ve güvenli bir yere kaydedin!** (Bir daha göremezsiniz)
-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
 
 ### 2. Git Yapılandırması
 

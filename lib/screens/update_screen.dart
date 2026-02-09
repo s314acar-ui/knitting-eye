@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:open_file/open_file.dart';
 import '../services/update_service.dart';
 
 class UpdateScreen extends StatefulWidget {
@@ -105,24 +104,49 @@ class _UpdateScreenState extends State<UpdateScreen> {
           _isDownloading = false;
         });
 
-        // APK'yı aç
-        final result = await OpenFile.open(apkFile.path);
+        debugPrint('📦 APK downloaded: ${apkFile.path}');
+        debugPrint('📦 File size: ${(await apkFile.length()) / 1024 / 1024} MB');
         
-        if (result.type != ResultType.done) {
-          setState(() {
-            _errorMessage = 'APK açılamadı: ${result.message}';
-          });
+        // Native Android intent ile APK yükleme
+        final result = await _updateService.installApk(apkFile);
+        debugPrint('📦 Install result: $result');
+        
+        if (result == 'PERMISSION_REQUESTED') {
+          // İzin sayfası açıldı, kullanıcıya bilgi ver
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('İzin verdikten sonra tekrar "İndir" butonuna basın.'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 5),
+              ),
+            );
+          }
+        } else if (result == 'INSTALLING') {
+          // Yükleme başladı
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('APK yükleme ekranı açıldı.'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        } else {
+          // Hata
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'APK yüklenemedi: $result';
+            });
+          }
         }
       } else {
+        debugPrint('❌ APK download returned null or file does not exist');
         setState(() {
-          _errorMessage = null;
+          _errorMessage = 'İndirme başarısız oldu. Lütfen tekrar deneyin.';
           _isDownloading = false;
         });
-        
-        // İndirme başarısız olduğunda izin uyarısı göster
-        if (mounted) {
-          _showPermissionDialog();
-        }
       }
     } catch (e) {
       setState(() {
