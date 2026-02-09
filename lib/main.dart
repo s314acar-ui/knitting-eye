@@ -38,14 +38,14 @@ class ELiARApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2196F3),
+          seedColor: const Color(0xFF9C27B0),
           brightness: Brightness.light,
         ),
         scaffoldBackgroundColor: const Color(0xFFEEEEEE),
         useMaterial3: true,
         appBarTheme: const AppBarTheme(
           toolbarHeight: 48,
-          backgroundColor: Color(0xFF2196F3),
+          backgroundColor: Color(0xFF9C27B0),
           foregroundColor: Colors.white,
           titleTextStyle: TextStyle(
             fontSize: 16,

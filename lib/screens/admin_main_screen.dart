@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../services/auth_service.dart';
 import 'home_tab.dart';
 import 'barcode_screen.dart';
@@ -22,6 +23,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   int _currentIndex = 0;
   late Timer _clockTimer;
   String _currentTime = '';
+  String _appVersion = '';
 
   final GlobalKey<HomeTabState> _homeTabKey = GlobalKey<HomeTabState>();
   final GlobalKey<OcrScreenState> _ocrScreenKey = GlobalKey<OcrScreenState>();
@@ -31,6 +33,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   @override
   void initState() {
     super.initState();
+    _loadAppVersion();
     _updateTime();
     _clockTimer =
         Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
@@ -56,6 +59,13 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     setState(() {
       _currentTime =
           '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    });
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = 'v${packageInfo.version}';
     });
   }
 
@@ -195,9 +205,9 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                         width: 1,
                       ),
                     ),
-                    child: const Text(
-                      'v2.0.5',
-                      style: TextStyle(
+                    child: Text(
+                      _appVersion.isEmpty ? 'v-.-.-' : _appVersion,
+                      style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 10,
                         fontWeight: FontWeight.w500,

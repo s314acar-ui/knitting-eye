@@ -2,7 +2,7 @@ name: ocr_scanner_app
 description: "Knitting Eye - Endüstriyel Okuma Sistemi"
 publish_to: 'none'
 
-version: 2.0.8+10
+version: 2.0.9+11
 
 environment:
   sdk: ^3.5.4
@@ -25,6 +25,7 @@ dependencies:
   wakelock_plus: ^1.2.4
   screen_protector: ^1.5.1
   open_file: ^3.3.2
+  package_info_plus: ^8.0.0
 
 dev_dependencies:
   flutter_test:
