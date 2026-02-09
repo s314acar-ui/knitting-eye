@@ -452,16 +452,37 @@ class _BarcodeScreenState extends State<BarcodeScreen>
                   Positioned(
                     top: 16,
                     right: 16,
-                    child: IconButton(
-                      onPressed: _toggleScanning,
-                      icon: Icon(
-                        _isScanning ? Icons.pause : Icons.play_arrow,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.black.withValues(alpha: 0.5),
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Kamerayı yeniden başlat butonu
+                        IconButton(
+                          onPressed: _reinitCamera,
+                          icon: const Icon(
+                            Icons.refresh,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.black.withValues(alpha: 0.5),
+                          ),
+                          tooltip: 'Kamerayı Yeniden Başlat',
+                        ),
+                        const SizedBox(width: 8),
+                        // Tarama durdur/başlat butonu
+                        IconButton(
+                          onPressed: _toggleScanning,
+                          icon: Icon(
+                            _isScanning ? Icons.pause : Icons.play_arrow,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.black.withValues(alpha: 0.5),
+                          ),
+                          tooltip: _isScanning ? 'Taramayı Duraklat' : 'Taramayı Başlat',
+                        ),
+                      ],
                     ),
                   ),
                 ],

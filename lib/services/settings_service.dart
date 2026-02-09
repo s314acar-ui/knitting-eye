@@ -5,6 +5,8 @@ class SettingsService {
   static const String _homeUrlKey = 'home_url';
   static const String _barcodeApiUrlKey = 'barcode_api_url';
   static const String _apiPortKey = 'api_port';
+  static const String _ocrCameraIndexKey = 'ocr_camera_index';
+  static const String _ocrZoomLevelKey = 'ocr_zoom_level';
   
   SharedPreferences? _prefs;
   String? _deviceIp;
@@ -35,6 +37,17 @@ class SettingsService {
   int get apiPort => _prefs?.getInt(_apiPortKey) ?? 8080;
   Future<void> setApiPort(int port) async {
     await _prefs?.setInt(_apiPortKey, port);
+  }
+  
+  // OCR Kamera Ayarları
+  int get ocrCameraIndex => _prefs?.getInt(_ocrCameraIndexKey) ?? -1; // -1 = varsayılan (ön kamera)
+  Future<void> setOcrCameraIndex(int index) async {
+    await _prefs?.setInt(_ocrCameraIndexKey, index);
+  }
+  
+  double get ocrZoomLevel => _prefs?.getDouble(_ocrZoomLevelKey) ?? 1.0;
+  Future<void> setOcrZoomLevel(double zoom) async {
+    await _prefs?.setDouble(_ocrZoomLevelKey, zoom);
   }
   
   // Cihaz IP

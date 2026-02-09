@@ -98,6 +98,92 @@ class _ConfigScreenState extends State<ConfigScreen> {
     }
   }
 
+  Future<void> _addCustomKey() async {
+    final keyController = TextEditingController();
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF16213e),
+        title: const Text('Elle Key Ekle', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'OCR tarafından okunan key değerini girin:',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: keyController,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Örn: SIRA NO, SIPARIS NO',
+                hintStyle: const TextStyle(color: Colors.white38),
+                filled: true,
+                fillColor: const Color(0xFF1a1a2e),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF0f3460)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF0f3460)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.blue),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İptal', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final key = keyController.text.trim();
+              if (key.isNotEmpty) {
+                Navigator.pop(context, key);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Ekle'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        if (!_learnedFields.contains(result)) {
+          _learnedFields.add(result);
+          _learnedFields.sort();
+        }
+      });
+      
+      // ConfigService'e de ekle
+      configService.learnOcrFields(_learnedFields);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Key eklendi: $result'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _clearAllMappings() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -187,6 +273,20 @@ class _ConfigScreenState extends State<ConfigScreen> {
                           style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.tealAccent,
                               foregroundColor: Colors.black,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 12)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _addCustomKey,
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Elle Key Ekle'),
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                              side: const BorderSide(color: Colors.blue),
                               padding:
                                   const EdgeInsets.symmetric(vertical: 12)),
                         ),

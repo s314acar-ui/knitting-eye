@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import '../services/document_ai_service.dart';
 import '../services/api_server.dart';
+import '../services/settings_service.dart';
 
 /// Basit OCR ekranı - Sadece operatör için
 /// Sadece kamera + işlem göstergesi
@@ -71,17 +72,25 @@ class SimpleOcrScreenState extends State<SimpleOcrScreen> {
 
       _availableCameras = await availableCameras();
       
-      // Ön kamerayı varsayılan olarak seç
-      _currentCameraIndex = _availableCameras.indexWhere(
-        (cam) => cam.lensDirection == CameraLensDirection.front,
-      );
-      // Ön kamera yoksa arka kamerayı seç
-      if (_currentCameraIndex == -1) {
+      // Kayıtlı kamera indeksini al
+      int savedIndex = settingsService.ocrCameraIndex;
+      
+      if (savedIndex >= 0 && savedIndex < _availableCameras.length) {
+        // Kayıtlı indeksi kullan
+        _currentCameraIndex = savedIndex;
+      } else {
+        // Kayıtlı indeks yoksa veya geçersizse, ön kamerayı varsayılan olarak seç
         _currentCameraIndex = _availableCameras.indexWhere(
-          (cam) => cam.lensDirection == CameraLensDirection.back,
+          (cam) => cam.lensDirection == CameraLensDirection.front,
         );
+        // Ön kamera yoksa arka kamerayı seç
+        if (_currentCameraIndex == -1) {
+          _currentCameraIndex = _availableCameras.indexWhere(
+            (cam) => cam.lensDirection == CameraLensDirection.back,
+          );
+        }
+        if (_currentCameraIndex == -1) _currentCameraIndex = 0;
       }
-      if (_currentCameraIndex == -1) _currentCameraIndex = 0;
 
       await _startCamera(_availableCameras[_currentCameraIndex]);
     } catch (e) {
@@ -118,7 +127,15 @@ class SimpleOcrScreenState extends State<SimpleOcrScreen> {
       // Zoom limitleri al
       _minZoom = await _cameraController!.getMinZoomLevel();
       _maxZoom = await _cameraController!.getMaxZoomLevel();
-      _currentZoom = 1.0;
+      
+      // Kayıtlı zoom seviyesini al
+      double savedZoom = settingsService.ocrZoomLevel;
+      if (savedZoom >= _minZoom && savedZoom <= _maxZoom) {
+        _currentZoom = savedZoom;
+        await _cameraController!.setZoomLevel(_currentZoom);
+      } else {
+        _currentZoom = 1.0;
+      }
 
       if (mounted) {
         setState(() {
@@ -139,6 +156,10 @@ class SimpleOcrScreenState extends State<SimpleOcrScreen> {
     if (_availableCameras.length < 2 || _isProcessing) return;
 
     _currentCameraIndex = (_currentCameraIndex + 1) % _availableCameras.length;
+    
+    // Kamera indeksini kaydet
+    await settingsService.setOcrCameraIndex(_currentCameraIndex);
+    
     await _startCamera(_availableCameras[_currentCameraIndex]);
   }
 
@@ -148,6 +169,10 @@ class SimpleOcrScreenState extends State<SimpleOcrScreen> {
     // Zoom değerini limitlere göre ayarla
     final clampedZoom = zoom.clamp(_minZoom, _maxZoom);
     await _cameraController!.setZoomLevel(clampedZoom);
+    
+    // Zoom seviyesini kaydet
+    await settingsService.setOcrZoomLevel(clampedZoom);
+    
     setState(() {
       _currentZoom = clampedZoom;
     });
