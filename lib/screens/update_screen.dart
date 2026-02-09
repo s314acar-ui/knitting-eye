@@ -679,15 +679,15 @@ class _UpdateScreenState extends State<UpdateScreen> {
                 // İndir butonu
                 if (!release.isCurrent && !_isDownloading)
                   ElevatedButton.icon(
-                    onPressed: isNewer ? () => _downloadAndInstall(release) : null,
+                    onPressed: () => _downloadAndInstall(release),
                     icon: Icon(
-                      isNewer ? Icons.download : Icons.warning_amber,
+                      isNewer ? Icons.download : Icons.arrow_downward,
                       size: 18,
                     ),
                     label: Text(isNewer ? 'İndir' : 'Downgrade'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isNewer ? Colors.blue : Colors.grey[800],
-                      foregroundColor: isNewer ? Colors.white : Colors.white54,
+                      backgroundColor: isNewer ? Colors.blue : Colors.orange,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
