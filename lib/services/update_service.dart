@@ -17,12 +17,15 @@ class UpdateService {
   /// GitHub'dan son sürüm bilgisini kontrol et
   Future<UpdateInfo?> checkForUpdates() async {
     try {
+      debugPrint('🔍 Checking for updates...');
       final response = await http.get(
         Uri.parse(_githubApiUrl),
         headers: {
           'Accept': 'application/vnd.github.v3+json',
         },
       ).timeout(const Duration(seconds: 10));
+
+      debugPrint('📡 checkForUpdates - Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -31,12 +34,15 @@ class UpdateService {
         final releaseUrl = data['html_url'] ?? '';
         final releaseNotes = data['body'] ?? '';
         
+        debugPrint('📦 Latest version from API: v$latestVersion');
+        
         // APK dosyasını bul
         String? apkDownloadUrl;
         if (data['assets'] != null && (data['assets'] as List).isNotEmpty) {
           for (var asset in data['assets']) {
             if (asset['name'].toString().endsWith('.apk')) {
               apkDownloadUrl = asset['browser_download_url'];
+              debugPrint('✓ APK found: ${asset['name']}');
               break;
             }
           }
@@ -44,6 +50,7 @@ class UpdateService {
 
         // Versiyon karşılaştırması
         if (_isNewerVersion(latestVersion, _currentVersion)) {
+          debugPrint('✅ New version available: v$latestVersion');
           return UpdateInfo(
             version: latestVersion,
             downloadUrl: apkDownloadUrl ?? '',
@@ -51,11 +58,15 @@ class UpdateService {
             releaseNotes: releaseNotes,
             apkSize: data['assets']?[0]?['size'] ?? 0,
           );
+        } else {
+          debugPrint('ℹ️ App is up to date (current: v$_currentVersion)');
         }
+      } else {
+        debugPrint('❌ API Error: ${response.statusCode}');
       }
       return null;
     } catch (e) {
-      debugPrint('Update check error: $e');
+      debugPrint('❌ Update check error: $e');
       return null;
     }
   }
@@ -70,8 +81,11 @@ class UpdateService {
         },
       ).timeout(const Duration(seconds: 10));
 
+      debugPrint('📡 getAllReleases - Status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final List<dynamic> releases = json.decode(response.body);
+        debugPrint('📦 Found ${releases.length} releases in API response');
         final List<UpdateInfo> allReleases = [];
 
         for (var data in releases) {
@@ -88,29 +102,37 @@ class UpdateService {
               if (asset['name'].toString().endsWith('.apk')) {
                 apkDownloadUrl = asset['browser_download_url'];
                 apkSize = asset['size'] ?? 0;
+                debugPrint('  ✓ v$version - APK found: ${asset['name']}');
                 break;
               }
             }
           }
 
-          if (version.isNotEmpty && apkDownloadUrl != null) {
-            allReleases.add(UpdateInfo(
-              version: version,
-              downloadUrl: apkDownloadUrl,
-              releaseUrl: releaseUrl,
-              releaseNotes: releaseNotes,
-              apkSize: apkSize,
-              publishedAt: publishedAt,
-              isCurrent: version == _currentVersion,
-            ));
+          if (version.isNotEmpty) {
+            if (apkDownloadUrl != null) {
+              allReleases.add(UpdateInfo(
+                version: version,
+                downloadUrl: apkDownloadUrl,
+                releaseUrl: releaseUrl,
+                releaseNotes: releaseNotes,
+                apkSize: apkSize,
+                publishedAt: publishedAt,
+                isCurrent: version == _currentVersion,
+              ));
+            } else {
+              debugPrint('  ⚠️ v$version - No APK found, skipping');
+            }
           }
         }
 
+        debugPrint('✅ Returning ${allReleases.length} releases with APK');
         return allReleases;
+      } else {
+        debugPrint('❌ API Error: ${response.statusCode} - ${response.body}');
       }
       return [];
     } catch (e) {
-      debugPrint('Get all releases error: $e');
+      debugPrint('❌ Get all releases error: $e');
       return [];
     }
   }

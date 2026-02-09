@@ -37,11 +37,16 @@ class _UpdateScreenState extends State<UpdateScreen> {
     });
 
     try {
+      debugPrint('🔄 Update screen: Starting update check...');
+      
       // Hem en son sürümü hem de tüm sürümleri al
       final updateInfo = await _updateService.checkForUpdates();
       final allReleases = await _updateService.getAllReleases();
       
       debugPrint('✅ Update Check: Found ${allReleases.length} releases');
+      if (allReleases.isEmpty) {
+        debugPrint('⚠️ WARNING: No releases found! This might be a private repo issue.');
+      }
       for (var release in allReleases) {
         debugPrint('  📦 v${release.version} - ${release.isCurrent ? "CURRENT" : release.isNewerThan(_updateService.currentVersion) ? "NEWER" : "OLDER"}');
       }
@@ -51,6 +56,11 @@ class _UpdateScreenState extends State<UpdateScreen> {
           _updateInfo = updateInfo;
           _allReleases = allReleases;
           _isChecking = false;
+          
+          // Eğer release bulunamadıysa hata mesajı göster
+          if (allReleases.isEmpty) {
+            _errorMessage = 'GitHub\'dan versiyon bilgisi alınamadı.\n\nOlası sebep: Repository private olabilir.\nÇözüm: Repository\'yi public yapın veya authentication ekleyin.';
+          }
         });
       }
     } catch (e) {
