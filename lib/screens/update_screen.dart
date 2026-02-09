@@ -81,6 +81,75 @@ class _UpdateScreenState extends State<UpdateScreen> {
       return;
     }
 
+    // Downgrade uyarısı göster
+    final isDowngrade = !release.isNewerThan(_updateService.currentVersion);
+    if (isDowngrade && mounted) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF16213e),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber, color: Colors.orange, size: 28),
+              const SizedBox(width: 12),
+              const Text('Eski Versiyon', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'v${release.version} eski bir versiyondur.',
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Yükleme Başarısız Olabilir',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Android eski versiyonları yüklemeyi engelleyebilir.\n\n'
+                      'Çözüm: Önce mevcut uygulamayı silin, ardından Downloads klasöründen APK\'yı manuel yükleyin.',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('İptal', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              child: const Text('Yine de İndir'),
+            ),
+          ],
+        ),
+      );
+      
+      if (confirmed != true) return;
+    }
+
     setState(() {
       _isDownloading = true;
       _downloadProgress = 0.0;
@@ -126,10 +195,14 @@ class _UpdateScreenState extends State<UpdateScreen> {
           // Yükleme başladı
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('APK yükleme ekranı açıldı.'),
+              SnackBar(
+                content: Text(
+                  'APK yükleme ekranı açıldı.\n'
+                  'APK ayrıca Downloads klasörüne kaydedildi.',
+                  style: TextStyle(fontSize: 13),
+                ),
                 backgroundColor: Colors.green,
-                duration: Duration(seconds: 3),
+                duration: Duration(seconds: 5),
               ),
             );
           }

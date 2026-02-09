@@ -14,8 +14,8 @@ class UpdateService {
   // GitHub Personal Access Token - dart-define veya .env dosyasından okunur
   static const String _githubToken = String.fromEnvironment('GITHUB_TOKEN', defaultValue: '');
   
-  static const String _currentVersion = '2.0.7'; // pubspec.yaml'daki versiyon
-  static const int _currentBuildNumber = 9;
+  static const String _currentVersion = '2.0.8'; // pubspec.yaml'daki versiyon
+  static const int _currentBuildNumber = 10;
 
   /// GitHub API headers (token varsa auth ekle)
   Map<String, String> get _headers {
@@ -212,6 +212,20 @@ class UpdateService {
 
         final fileSize = await file.length();
         debugPrint('✅ Download complete! File size: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
+        
+        // APK'yı Downloads klasörüne de kopyala (kullanıcı manuel yükleyebilsin)
+        try {
+          final downloadsDir = Directory('/storage/emulated/0/Download');
+          if (await downloadsDir.exists()) {
+            final fileName = url.split('/').last;
+            final publicFile = File('${downloadsDir.path}/$fileName');
+            await file.copy(publicFile.path);
+            debugPrint('📁 APK copied to Downloads: ${publicFile.path}');
+          }
+        } catch (e) {
+          debugPrint('⚠️ Could not copy to Downloads: $e');
+        }
+        
         return file;
       } else {
         debugPrint('❌ HTTP Error: ${response.statusCode}');
