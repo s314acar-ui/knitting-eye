@@ -142,7 +142,7 @@ class _UpdateScreenState extends State<UpdateScreen> {
             Icon(Icons.info_outline, color: Colors.blue, size: 28),
             const SizedBox(width: 12),
             const Text(
-              'İzin Gerekli',
+              'APK Yükleme İzni',
               style: TextStyle(color: Colors.white),
             ),
           ],
@@ -152,16 +152,49 @@ class _UpdateScreenState extends State<UpdateScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'APK indirmek için aşağıdaki izinler gereklidir:',
+              'APK dosyalarını indirip yüklemek için izin gereklidir.',
               style: TextStyle(color: Colors.white, fontSize: 14),
             ),
             const SizedBox(height: 16),
             _buildPermissionItem(
               Icons.install_mobile,
               'Bilinmeyen Kaynaklardan Yükleme',
-              'APK dosyalarını yüklemek için gerekli',
+              'Uygulama güncellemelerini yüklemek için',
             ),
             const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green, size: 18),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'İlk İndirmede İzin İstenecek',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'İndirmeye başladığınızda Android otomatik olarak izin dialogu gösterecektir. "İzin ver" veya "Allow" seçeneğine tıklayın.',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -177,7 +210,7 @@ class _UpdateScreenState extends State<UpdateScreen> {
                       Icon(Icons.settings, color: Colors.blue, size: 18),
                       const SizedBox(width: 8),
                       const Text(
-                        'Nasıl Yapılır?',
+                        'Manuel Ayar (Opsiyonel)',
                         style: TextStyle(
                           color: Colors.blue,
                           fontWeight: FontWeight.bold,
@@ -188,9 +221,8 @@ class _UpdateScreenState extends State<UpdateScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '1. Ayarlar > Uygulamalar > Knitting Eye\n'
-                    '2. İzinler > Bilinmeyen kaynaklardan yükleme\n'
-                    '3. İzin ver / Allow',
+                    'Ayarlar > Güvenlik > Bilinmeyen uygulamaları yükle\n\n'
+                    'Not: İlk indirme denemesinden sonra listede görünecektir.',
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
