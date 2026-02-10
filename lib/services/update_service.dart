@@ -14,8 +14,8 @@ class UpdateService {
   // GitHub Personal Access Token - dart-define veya .env dosyasından okunur
   static const String _githubToken = String.fromEnvironment('GITHUB_TOKEN', defaultValue: '');
   
-  static const String _currentVersion = '2.0.9'; // pubspec.yaml'daki versiyon
-  static const int _currentBuildNumber = 11;
+  static const String _currentVersion = '2.0.10'; // pubspec.yaml'daki versiyon
+  static const int _currentBuildNumber = 12;
 
   /// GitHub API headers (token varsa auth ekle)
   Map<String, String> get _headers {
@@ -264,6 +264,18 @@ class UpdateService {
       return result == true;
     } catch (e) {
       return false;
+    }
+  }
+
+  /// Paket yükleme iznini iste (ayarlara yönlendir)
+  Future<String> requestInstallPermission() async {
+    try {
+      const channel = MethodChannel('com.example.ocr_scanner_app/install');
+      final result = await channel.invokeMethod('requestInstallPermission');
+      return result?.toString() ?? 'UNKNOWN';
+    } catch (e) {
+      debugPrint('❌ Permission request error: $e');
+      return 'ERROR: $e';
     }
   }
 

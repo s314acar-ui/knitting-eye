@@ -78,6 +78,27 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
                 }
+                "requestInstallPermission" -> {
+                    // APK dosyası olmadan sadece izin iste
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        if (!packageManager.canRequestPackageInstalls()) {
+                            try {
+                                val intent = Intent(
+                                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                    Uri.parse("package:$packageName")
+                                )
+                                startActivity(intent)
+                                result.success("PERMISSION_REQUESTED")
+                            } catch (e: Exception) {
+                                result.error("PERMISSION_ERROR", e.message, null)
+                            }
+                        } else {
+                            result.success("ALREADY_GRANTED")
+                        }
+                    } else {
+                        result.success("NOT_REQUIRED")
+                    }
+                }
                 else -> result.notImplemented()
             }
         }

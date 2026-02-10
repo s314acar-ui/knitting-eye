@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../services/settings_service.dart';
 import '../services/api_server.dart';
 import '../services/auth_service.dart';
+import '../services/update_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback? onUrlSaved;
@@ -13,15 +14,33 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen>
+    with WidgetsBindingObserver {
   final _homeUrlController = TextEditingController();
   String _deviceIp = '';
+  bool _canInstallPackages = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadSettings();
     _startApiServer();
+    _checkPermissions();
+  }
+
+  Future<void> _checkPermissions() async {
+    try {
+      final updateService = UpdateService();
+      final canInstall = await updateService.canInstallPackages();
+      if (mounted) {
+        setState(() {
+          _canInstallPackages = canInstall;
+        });
+      }
+    } catch (e) {
+      debugPrint('⚠️ Permission check error: $e');
+    }
   }
 
   void _loadSettings() {
@@ -38,8 +57,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _homeUrlController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Uygulama geri geldiğinde izin durumunu güncelle
+    if (state == AppLifecycleState.resumed) {
+      _checkPermissions();
+    }
   }
 
   Future<void> _saveHomeUrl() async {
@@ -177,6 +205,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildAdminPasswordSection(),
                     const SizedBox(height: 24),
                   ],
+
+                  // Uygulama İzinleri Yönetimi
+                  _buildPermissionsSection(),
+                  const SizedBox(height: 24),
 
                   // API Endpoints bilgisi
                   Container(
@@ -457,6 +489,143 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildPermissionsSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _canInstallPackages ? Colors.green[50] : Colors.red[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _canInstallPackages ? Colors.green[200]! : Colors.red[200]!,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.security, color: Color(0xFF424242)),
+              SizedBox(width: 8),
+              Text(
+                'Uygulama İzinleri',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF424242),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Uygulama Yükleme İzni
+          Row(
+            children: [
+              Icon(
+                _canInstallPackages ? Icons.check_circle : Icons.cancel,
+                size: 20,
+                color: _canInstallPackages ? Colors.green : Colors.red,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Bilinmeyen Kaynaklardan Yükleme',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      _canInstallPackages
+                          ? 'İzin verildi - Güncelleme sistemi çalışır durumda'
+                          : 'İzin verilmedi - Güncelleme yüklenemez',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: _canInstallPackages
+                            ? Colors.green[700]
+                            : Colors.red[700],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (!_canInstallPackages)
+                ElevatedButton.icon(
+                  onPressed: _requestInstallPermission,
+                  icon: const Icon(Icons.settings, size: 16),
+                  label: const Text('İzin Ver'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                  ),
+                ),
+              OutlinedButton.icon(
+                onPressed: _checkPermissions,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Durumu Güncelle'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF424242),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              ),
+            ],
+          ),
+          if (!_canInstallPackages) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Kiosk modundayken güncelleme yapabilmek için bu iznin verilmesi gerekir. '
+                      'Açılacak ayarlar ekranında izni etkinleştirin ve geri dönün.',
+                      style: TextStyle(fontSize: 11, color: Colors.orange),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _requestInstallPermission() async {
+    try {
+      final updateService = UpdateService();
+      final result = await updateService.requestInstallPermission();
+      if (result == 'ALREADY_GRANTED') {
+        _showSnackBar('İzin zaten verilmiş');
+      } else if (result == 'PERMISSION_REQUESTED') {
+        _showSnackBar('Ayarlar açıldı - izni etkinleştirin ve geri dönün');
+      }
+      // Geri döndüğünde durumu güncelle
+      await Future.delayed(const Duration(seconds: 2));
+      await _checkPermissions();
+    } catch (e) {
+      _showSnackBar('İzin istenemedi: $e');
+    }
   }
 
   Widget _buildAdminPasswordSection() {

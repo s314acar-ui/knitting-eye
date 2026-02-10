@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../services/auth_service.dart';
+import '../services/update_service.dart';
 import 'home_tab.dart';
 import 'barcode_screen.dart';
 import 'ocr_screen.dart';
@@ -46,6 +47,64 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       const ConfigScreen(),
       if (authService.isDeveloper) SettingsScreen(onUrlSaved: _onUrlSaved),
     ];
+
+    // Developer girişinde uygulama yükleme iznini kontrol et
+    if (authService.isDeveloper) {
+      _checkInstallPermission();
+    }
+  }
+
+  /// Developer ilk girişinde uygulama yükleme izni iste
+  Future<void> _checkInstallPermission() async {
+    try {
+      final updateService = UpdateService();
+      final canInstall = await updateService.canInstallPackages();
+      if (!canInstall && mounted) {
+        // İzin yoksa dialog göster
+        _showInstallPermissionDialog();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Install permission check error: $e');
+    }
+  }
+
+  void _showInstallPermissionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.security, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Uygulama Yükleme İzni'),
+          ],
+        ),
+        content: const Text(
+          'Güncelleme sisteminin çalışması için "Bilinmeyen kaynaklardan uygulama yükleme" izninin verilmesi gerekiyor.\n\n'
+          'Açılacak ayarlar ekranında bu izni etkinleştirin ve geri dönün.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Sonra'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              final updateService = UpdateService();
+              await updateService.requestInstallPermission();
+            },
+            icon: const Icon(Icons.settings, size: 18),
+            label: const Text('İzin Ver'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
