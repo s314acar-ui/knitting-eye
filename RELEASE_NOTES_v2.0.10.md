@@ -3,7 +3,7 @@
 ## 🆕 Yeni Özellikler
 
 ### Uygulama Yükleme İzin Yönetimi
-- **Developer ilk girişinde otomatik izin kontrolü**: Developer (`el1984`) ile ilk giriş yapıldığında, "Bilinmeyen kaynaklardan uygulama yükleme" izni otomatik olarak kontrol edilir
+- **Developer ilk girişinde otomatik izin kontrolü**: Developer ile ilk giriş yapıldığında, "Bilinmeyen kaynaklardan uygulama yükleme" izni otomatik olarak kontrol edilir
 - **İzin dialog'u**: İzin verilmemişse bilgilendirme dialog'u ile kullanıcı Android ayarlarına yönlendirilir
 - **Developer Ayarlar panelinde izin yönetimi**:
   - İzin durumu göstergesi (Verildi ✅ / Verilmedi ❌)
