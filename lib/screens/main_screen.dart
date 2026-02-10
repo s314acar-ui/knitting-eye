@@ -5,6 +5,7 @@ import 'barcode_screen.dart';
 import 'simple_ocr_screen.dart';
 import 'admin_main_screen.dart';
 import '../services/auth_service.dart';
+import '../services/kiosk_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -36,6 +37,24 @@ class MainScreenState extends State<MainScreen> {
       BarcodeScreen(onComplete: () => _navigateTo(0)),
       SimpleOcrScreen(key: _ocrScreenKey, onComplete: () => _navigateTo(0)),
     ];
+
+    // Operatör ekranı açıldığında otomatik olarak kiosk moduna geç
+    _enableKioskMode();
+  }
+
+  /// Kiosk modunu otomatik olarak etkinleştir
+  Future<void> _enableKioskMode() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 500)); // Ekran yüklenmesini bekle
+      final success = await kioskService.setKioskMode(true);
+      if (success) {
+        debugPrint('✅ Kiosk mode otomatik olarak etkinleştirildi');
+      } else {
+        debugPrint('⚠️ Kiosk mode etkinleştirilemedi');
+      }
+    } catch (e) {
+      debugPrint('❌ Kiosk mode başlatma hatası: $e');
+    }
   }
 
   @override
