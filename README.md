@@ -67,7 +67,7 @@ flutter build apk --release
 
 ### Developer Modu
 1. Logo'ya tıklayın
-2. `el1984` şifresi ile giriş yapın
+2. Developer şifresi ile giriş yapın
 3. Tüm özelliklere erişim:
    - **Ayarlar**: Ana sayfa URL değiştirme
    - **Kiosk**: Cihaz kilitleme modu
