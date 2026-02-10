@@ -1,0 +1,41 @@
+name: ocr_scanner_app
+description: "Knitting Eye - Endüstriyel Okuma Sistemi"
+publish_to: 'none'
+
+version: 2.0.17+19
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  image_picker: ^1.0.4
+  google_mlkit_text_recognition: ^0.11.0
+  google_mlkit_barcode_scanning: ^0.10.0
+  http: ^1.1.0
+  googleapis_auth: ^1.4.1
+  path_provider: ^2.1.1
+  shared_preferences: ^2.2.2
+  share_plus: ^7.2.1
+  permission_handler: ^11.0.1
+  camera: ^0.10.5+9
+  webview_flutter: ^4.4.2
+  wakelock_plus: ^1.2.4
+  screen_protector: ^1.5.1
+  open_file: ^3.3.2
+  package_info_plus: ^8.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/logo.png
+    - assets/images/logo_white.png
+    - assets/images/logo_horizontal.png
