@@ -29,6 +29,16 @@ class _UpdateScreenState extends State<UpdateScreen> {
     _checkForUpdates();
   }
 
+  @override
+  void dispose() {
+    // Ekran kapatılırken yönetici için kiosk mode'u geri aç
+    if (!authService.isDeveloper) {
+      kioskService.setKioskMode(true);
+      debugPrint('🔒 Update ekranı kapatıldı - Kiosk mode aktif');
+    }
+    super.dispose();
+  }
+
   Future<void> _checkForUpdates() async {
     setState(() {
       _isChecking = true;
@@ -769,23 +779,52 @@ class _UpdateScreenState extends State<UpdateScreen> {
                 ),
 
                 // İndir butonu
-                if (!release.isCurrent && !_isDownloading)
-                  ElevatedButton.icon(
-                    onPressed: () => _downloadAndInstall(release),
-                    icon: Icon(
-                      isNewer ? Icons.download : Icons.arrow_downward,
-                      size: 18,
-                    ),
-                    label: Text(isNewer ? 'İndir' : 'Downgrade'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isNewer ? Colors.blue : Colors.orange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                if (!release.isCurrent && !_isDownloading) ...[
+                  // Yönetici için sadece upgrade, developer için her şey
+                  if (isNewer || authService.isDeveloper)
+                    ElevatedButton.icon(
+                      onPressed: () => _downloadAndInstall(release),
+                      icon: Icon(
+                        isNewer ? Icons.download : Icons.arrow_downward,
+                        size: 18,
+                      ),
+                      label: Text(isNewer ? 'İndir' : 'Downgrade'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isNewer ? Colors.blue : Colors.orange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                      ),
+                    )
+                  else
+                    // Yönetici için downgrade engellendi mesajı
+                    Tooltip(
+                      message: 'Yönetici eski versiyonlara dönemez',
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.lock, size: 16, color: Colors.grey[400]),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Engelli',
+                              style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                ],
               ],
             ),
           ),
