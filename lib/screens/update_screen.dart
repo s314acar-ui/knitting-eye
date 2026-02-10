@@ -83,15 +83,6 @@ class _UpdateScreenState extends State<UpdateScreen> {
       return;
     }
 
-    // Yönetici kiosk modundaysa geçici olarak gevşet
-    bool wasInKioskMode = false;
-    if (!authService.isDeveloper) {
-      // Yönetici ise kiosk mode'u geçici kapat
-      wasInKioskMode = true;
-      await kioskService.setKioskMode(false);
-      debugPrint('🔓 Kiosk mode geçici olarak devre dışı (güncelleme için)');
-    }
-
     // Downgrade uyarısı göster
     final isDowngrade = !release.isNewerThan(_updateService.currentVersion);
     if (isDowngrade && mounted) {
@@ -168,6 +159,8 @@ class _UpdateScreenState extends State<UpdateScreen> {
       _downloadingVersion = release.version;
     });
 
+    bool wasInKioskMode = false; // APK indirme öncesi kiosk durumu
+
     try {
       final apkFile = await _updateService.downloadApk(
         release.downloadUrl,
@@ -186,6 +179,13 @@ class _UpdateScreenState extends State<UpdateScreen> {
 
         debugPrint('📦 APK downloaded: ${apkFile.path}');
         debugPrint('📦 File size: ${(await apkFile.length()) / 1024 / 1024} MB');
+        
+        // Yönetici kiosk modundaysa kurulum için geçici gevşet
+        if (!authService.isDeveloper) {
+          wasInKioskMode = true;
+          await kioskService.setKioskMode(false);
+          debugPrint('🔓 Kiosk mode geçici olarak devre dışı (kurulum için)');
+        }
         
         // Native Android intent ile APK yükleme
         final result = await _updateService.installApk(apkFile);
@@ -218,11 +218,17 @@ class _UpdateScreenState extends State<UpdateScreen> {
             );
           }
         } else {
-          // Hata
+          // Hata - kiosk mode'u geri aç
           if (mounted) {
             setState(() {
               _errorMessage = 'APK yüklenemedi: $result';
             });
+          }
+          
+          if (wasInKioskMode) {
+            await Future.delayed(const Duration(milliseconds: 500));
+            await kioskService.setKioskMode(true);
+            debugPrint('🔒 Kiosk mode tekrar etkinleştirildi (kurulum hatası)');
           }
         }
       } else {
@@ -231,26 +237,12 @@ class _UpdateScreenState extends State<UpdateScreen> {
           _errorMessage = 'İndirme başarısız oldu. Lütfen tekrar deneyin.';
           _isDownloading = false;
         });
-        
-        // Kiosk mode'u geri aç
-        if (wasInKioskMode && !authService.isDeveloper) {
-          await Future.delayed(const Duration(seconds: 1));
-          await kioskService.setKioskMode(true);
-          debugPrint('🔒 Kiosk mode tekrar etkinleştirildi');
-        }
       }
     } catch (e) {
       setState(() {
         _errorMessage = 'İndirme hatası: $e';
         _isDownloading = false;
       });
-      
-      // Kiosk mode'u geri aç
-      if (wasInKioskMode && !authService.isDeveloper) {
-        await Future.delayed(const Duration(seconds: 1));
-        await kioskService.setKioskMode(true);
-        debugPrint('🔒 Kiosk mode tekrar etkinleştirildi (hata)');
-      }
     }
     
     // Not: Başarılı yüklemede uygulama kapanacağı için kiosk mode'u tekrar açmaya gerek yok
