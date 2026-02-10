@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../services/auth_service.dart';
 import '../services/update_service.dart';
+import '../services/kiosk_service.dart';
 import 'home_tab.dart';
 import 'barcode_screen.dart';
 import 'ocr_screen.dart';
@@ -51,6 +52,24 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     // Developer girişinde uygulama yükleme iznini kontrol et
     if (authService.isDeveloper) {
       _checkInstallPermission();
+    } else {
+      // Yönetici (admin) girişinde kiosk mode'u etkinleştir
+      _enableKioskMode();
+    }
+  }
+
+  /// Kiosk modunu otomatik olarak etkinleştir (sadece yönetici için)
+  Future<void> _enableKioskMode() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 500));
+      final success = await kioskService.setKioskMode(true);
+      if (success) {
+        debugPrint('✅ Admin kiosk mode etkinleştirildi');
+      } else {
+        debugPrint('⚠️ Admin kiosk mode etkinleştirilemedi');
+      }
+    } catch (e) {
+      debugPrint('❌ Admin kiosk mode hatası: $e');
     }
   }
 

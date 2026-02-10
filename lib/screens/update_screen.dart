@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/update_service.dart';
+import '../services/kiosk_service.dart';
+import '../services/auth_service.dart';
 
 class UpdateScreen extends StatefulWidget {
   const UpdateScreen({super.key});
@@ -79,6 +81,15 @@ class _UpdateScreenState extends State<UpdateScreen> {
         _errorMessage = 'APK indirme linki bulunamadı';
       });
       return;
+    }
+
+    // Yönetici kiosk modundaysa geçici olarak gevşet
+    bool wasInKioskMode = false;
+    if (!authService.isDeveloper) {
+      // Yönetici ise kiosk mode'u geçici kapat
+      wasInKioskMode = true;
+      await kioskService.setKioskMode(false);
+      debugPrint('🔓 Kiosk mode geçici olarak devre dışı (güncelleme için)');
     }
 
     // Downgrade uyarısı göster
@@ -220,13 +231,29 @@ class _UpdateScreenState extends State<UpdateScreen> {
           _errorMessage = 'İndirme başarısız oldu. Lütfen tekrar deneyin.';
           _isDownloading = false;
         });
+        
+        // Kiosk mode'u geri aç
+        if (wasInKioskMode && !authService.isDeveloper) {
+          await Future.delayed(const Duration(seconds: 1));
+          await kioskService.setKioskMode(true);
+          debugPrint('🔒 Kiosk mode tekrar etkinleştirildi');
+        }
       }
     } catch (e) {
       setState(() {
         _errorMessage = 'İndirme hatası: $e';
         _isDownloading = false;
       });
+      
+      // Kiosk mode'u geri aç
+      if (wasInKioskMode && !authService.isDeveloper) {
+        await Future.delayed(const Duration(seconds: 1));
+        await kioskService.setKioskMode(true);
+        debugPrint('🔒 Kiosk mode tekrar etkinleştirildi (hata)');
+      }
     }
+    
+    // Not: Başarılı yüklemede uygulama kapanacağı için kiosk mode'u tekrar açmaya gerek yok
   }
 
   void _showPermissionDialog() {
@@ -631,7 +658,7 @@ class _UpdateScreenState extends State<UpdateScreen> {
           const SizedBox(height: 12),
 
           // Versiyon listesi
-          ..._allReleases.map((release) => _buildReleaseCard(release)).toList(),
+          ..._allReleases.map((release) => _buildReleaseCard(release)),
         ],
       ),
     );
