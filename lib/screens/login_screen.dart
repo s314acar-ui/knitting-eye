@@ -49,10 +49,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loginAsAdmin() async {
-    // Önce klavyeyi kapat ve kapanmasını bekle
+    // 1. Önce klavyeyi kapat
     FocusScope.of(context).unfocus();
-    await Future.delayed(const Duration(milliseconds: 300));
     
+    // 2. Klavyenin kapanması için kısa bekle
+    await Future.delayed(const Duration(milliseconds: 200));
+    
+    // 3. Şifre kontrolü
     final password = _passwordController.text.trim();
 
     if (password.isEmpty) {
@@ -65,15 +68,12 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    // Giriş kontrolü yap
+    // 4. Giriş kontrolü yap
     final user = await authService.loginAsAdmin(password);
 
     if (user != null) {
       if (mounted) {
-        // Ekranı değiştirmeden önce bir kez daha klavyenin kapandığından emin ol
-        FocusScope.of(context).unfocus();
-        await Future.delayed(const Duration(milliseconds: 100));
-        
+        // 5. Ekrana git (kiosk modu ekran yüklendikten sonra ayarlanacak)
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const AdminMainScreen()),
         );
