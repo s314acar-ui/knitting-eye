@@ -14,8 +14,8 @@ class UpdateService {
   // GitHub Personal Access Token - dart-define veya .env dosyasından okunur
   static const String _githubToken = String.fromEnvironment('GITHUB_TOKEN', defaultValue: '');
   
-  static const String _currentVersion = '2.0.22'; // pubspec.yaml'daki versiyon
-  static const int _currentBuildNumber = 24;
+  static const String _currentVersion = '2.0.23'; // pubspec.yaml'daki versiyon
+  static const int _currentBuildNumber = 25;
 
   /// GitHub API headers (token varsa auth ekle)
   Map<String, String> get _headers {

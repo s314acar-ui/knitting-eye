@@ -49,8 +49,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loginAsAdmin() async {
-    // Klavyeyi kapat
+    // Önce klavyeyi kapat ve kapanmasını bekle
     FocusScope.of(context).unfocus();
+    await Future.delayed(const Duration(milliseconds: 300));
     
     final password = _passwordController.text.trim();
 
@@ -64,13 +65,15 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    // Klavyenin kapanması için kısa bir bekleme
-    await Future.delayed(const Duration(milliseconds: 100));
-
+    // Giriş kontrolü yap
     final user = await authService.loginAsAdmin(password);
 
     if (user != null) {
       if (mounted) {
+        // Ekranı değiştirmeden önce bir kez daha klavyenin kapandığından emin ol
+        FocusScope.of(context).unfocus();
+        await Future.delayed(const Duration(milliseconds: 100));
+        
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const AdminMainScreen()),
         );
